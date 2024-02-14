@@ -28,6 +28,8 @@ plt.axhline(y=0.99, color='red', linestyle='--',
             label='Fast Learning Region (|gradient| > 0.99)')
 plt.axhline(y=0.01, color='green', linestyle='--',
             label='Active Learning Region (0.01 <= |gradient| <= 0.99)')
+plt.axhline(y=0.01, color='purple', linestyle='--',
+            label='Slow Learning Region (0 < |gradient| < 0.01)', zorder=5)
 plt.axhline(y=0, color='orange', linestyle='--',
             label='Inactive Learning Region (|gradient| = 0)')
 plt.xlabel('Input')

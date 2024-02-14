@@ -72,6 +72,7 @@ for epoch in range(epochs):
     optimizer.zero_grad()   # Zero the gradient buffers
     output = net(x)         # Pass the input through the network
     loss = criterion(output, g_x)  # Compute the loss
+    losses.append(loss.item())
 
     errors = torch.abs(output - g_x)
     max_errors.append(torch.max(errors).item())
@@ -94,46 +95,26 @@ with torch.no_grad():
 
 # `x` is your input range, and `first_layer_patterns` now contains a binary matrix of activations for the first layer
 num_neurons = first_layer_patterns.shape[1]
-fig, ax = plt.subplots(figsize=(10, 6))
-
-# Plot the activation regions
-# Each point's color represents a different activation pattern
-scatter = ax.scatter(x.numpy().flatten(), torch.zeros_like(
-    x).numpy().flatten(), c=pattern_integers, cmap='viridis', s=2)
-
-# Create a colorbar to show the mapping between colors and activation patterns
-cbar = plt.colorbar(scatter, ax=ax)
-cbar.set_label('Activation Pattern Code')
-
-ax.set_xlabel('Input x')
-ax.set_yticks([])  # Hide y-axis ticks as they are not meaningful in this plot
-ax.set_title('Activation Regions for First Layer Neurons')
-
-# Annotating some of the activation regions with their binary patterns
-unique_patterns, indices = np.unique(pattern_integers, return_index=True)
-# Number of neurons in the first layer
-num_neurons = first_layer_patterns.shape[1]
-for pattern, index in zip(unique_patterns, indices):
-    binary_pattern = format(pattern, f'0{num_neurons}b')
-    ax.annotate(binary_pattern, (x.numpy().flatten()[
-                index], 0), textcoords="offset points", xytext=(0, 10), ha='center')
-
-plt.show()
-
-# Adjust the figure size as needed
-# fig, ax = plt.subplots(figsize=(10, 2))
-
-# Plot each neuron's activation pattern
-
-# Calculate the average activation rate per layer
-# Average over neurons in each layer
-
+# fig, ax = plt.subplots(figsize=(10, 6))
 fig, axs = plt.subplots(1, 3, figsize=(30, 6))
 
-for neuron_idx in range(num_neurons):
-    neuron_activations = first_layer_patterns[:, neuron_idx]
-    axs[2].plot(x.numpy().flatten(), neuron_activations + neuron_idx,  # Offset each line for visibility
-                label=f'Neuron {neuron_idx}')
+# Scatter plot for activation regions
+scatter = axs[2].scatter(x.numpy().flatten(), np.zeros_like(x.numpy()).flatten(),
+                         c=pattern_integers, cmap='viridis', s=2, alpha=0.5)  # Added alpha for better visualization
+
+# Create a colorbar to interpret the colors
+cbar = plt.colorbar(scatter, ax=axs[2])
+cbar.set_label('Activation Pattern Code')
+
+# Set the labels and title
+axs[2].set_xlabel('Input x')
+# Hides y-axis ticks as they're not meaningful in this context
+axs[2].set_yticks([])
+axs[2].set_title('Activation Regions for First Layer Neurons')
+
+# Annotating activation regions with binary patterns# Assuming you've already plotted the scatter plot as before
+unique_patterns, indices = np.unique(pattern_integers, return_index=True)
+
 
 # First subplot: True function vs. NN approximation
 axs[0].plot(x.numpy(), g_x.numpy(), label='True Function')
@@ -145,21 +126,12 @@ axs[0].set_ylabel('g(x)')
 axs[0].set_title('Function Approximation')
 
 # Second subplot: Training loss, Max error, and Average error over epochs
-axs[1].plot(losses, label='Training Loss')
+axs[1].plot(losses, label='Training error', linestyle='--')
 axs[1].plot(max_errors, label='Max Error')
 axs[1].plot(avg_errors, label='Average Error')
 axs[1].legend()
 axs[1].set_xlabel('Epoch')
 axs[1].set_ylabel('Error')
 axs[1].set_title('Training Dynamics')
-
-axs[2].set_xlabel('Input x')
-axs[2].set_ylabel('Activation + Neuron Index')
-axs[2].set_title('Activation Patterns for First Layer Neurons')
-# Adjust the y-ticks to represent each neuron
-axs[2].set_yticks(range(num_neurons))
-axs[2].set_yticklabels([f'Neuron {i}' for i in range(num_neurons)])
-axs[2].legend()
-
 
 plt.show()

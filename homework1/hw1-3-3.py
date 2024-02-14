@@ -97,32 +97,88 @@ predicted_class = np.argmax(probabilities)
 print("Probabilities 2:", probabilities)
 print("Predicted Class 2:", predicted_class)
 
-prob_diff = probabilities - y_true
+softmax_weight_reshaped = softmax_weight.reshape((num_inputs, -1))
 
+# Compute the update values for weights and biases
+weight_updates = learning_rate * np.outer(asample, gradient_logits)
+bias_updates = learning_rate * gradient_logits
+
+# Apply updates to weights and biases
+updated_weights = softmax_weight_reshaped - weight_updates
+updated_biases = softmax_bias - bias_updates
+
+# Calculate changes
+weight_changes = updated_weights - softmax_weight_reshaped
+bias_changes = updated_biases - softmax_bias
+
+# Determine the counts
+weights_increased = np.sum(weight_changes > 0.00001)
+weights_decreased = np.sum(weight_changes < -0.00001)
+weights_unchanged = np.sum(np.abs(weight_changes) <= 0.00001)
+
+biases_increased = np.sum(bias_changes > 0.00001)
+biases_decreased = np.sum(bias_changes < -0.00001)
+biases_unchanged = np.sum(np.abs(bias_changes) <= 0.00001)
+
+print(
+    f"Weights Increased: {weights_increased}, Decreased: {weights_decreased}, Unchanged: {weights_unchanged}")
+print(
+    f"Biases Increased: {biases_increased}, Decreased: {biases_decreased}, Unchanged: {biases_unchanged}")
+"""
 
 def compute_input_gradient(asample, probabilities, y_true, softmax_weight):
 
-    gradient_wrt_input = np.dot(softmax_weight.T, prob_diff)
+    prob_diff = probabilities - y_true
+
+    print("Shape of softmax_weight.T:", softmax_weight.shape)
+
+    print("Shape of prob_diff:", prob_diff.shape)  # Should be (20,)
+
+    gradient_wrt_input = np.dot(softmax_weight, prob_diff)
 
     return gradient_wrt_input
 
 
 # Compute the gradient of the loss with respect to the input sample.
-gradient_wrt_input = compute_input_gradient(
-    asample, y_true, softmax_weight, softmax_bias)
+epsilon = 0.01  # Starting small
+max_iterations = 100
+tolerance = 1e-6  # Tolerance to avoid too small updates
 
-# Determine a small epsilon value for the perturbation. This requires tuning.
-epsilon = 0.01
+for i in range(max_iterations):
+    # Recalculate everything based on current adversarial_sample
+    logits = np.dot(asample, softmax_weight.reshape((-1, 20))) + softmax_bias
+    probabilities = softmax(logits)
+    predicted_class = np.argmax(probabilities)
 
-# Apply the perturbation in the direction that increases the class 5 probability.
-# Note: In practice, you might need to iterate to find the smallest epsilon that achieves the desired change.
-adversarial_sample = asample + epsilon * gradient_wrt_input
+    # Check if the desired class is achieved
+    if predicted_class == correct_label:
+        print("Achieved target class with epsilon:", epsilon)
+        break
 
-# Recompute logits and probabilities for the adversarial sample.
-logits_adversarial = np.dot(
-    adversarial_sample, softmax_weight.reshape((num_inputs, -1))) + softmax_bias
-probabilities_adversarial = softmax(logits_adversarial)
-predicted_class_adversarial = np.argmax(probabilities_adversarial)
+    print("Shape of softmax_weight before transpose:", softmax_weight.shape)
+    softmax_weight_T = softmax_weight.T
+  # If not, compute the gradient and update the sample
+    gradient_wrt_input = compute_input_gradient(
+        asample, probabilities, y_true, softmax_weight)
 
-print("Adversarial Probabilities:", probabilities_adversarial)
-print("Adversarial Predicted Class:", predicted_class_adversarial)
+   # Ensure the gradient step is significant enough
+    if np.linalg.norm(gradient_wrt_input) < tolerance:
+        print("Gradient too small, increasing epsilon")
+        epsilon *= 10  # Increase epsilon to enforce a more substantial update
+        continue
+
+    # Update asample in the direction that should increase the probability of the correct class
+    asample = asample - epsilon * gradient_wrt_input / \
+        np.linalg.norm(gradient_wrt_input)
+
+    # Optionally, check the size of the perturbation and stop if it exceeds a predefined threshold
+
+# Recompute final logits and probabilities for the updated adversarial sample
+    logits_adversarial = np.dot(
+        asample, softmax_weight.reshape((-1, 20))) + softmax_bias
+    probabilities_adversarial = softmax(logits_adversarial)
+    predicted_class_adversarial = np.argmax(probabilities_adversarial)
+
+    print("Final Adversarial Probabilities:", probabilities_adversarial)
+    print("Final Adversarial Predicted Class:", predicted_class_adversarial)
+"""
